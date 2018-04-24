@@ -221,6 +221,7 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
 @property (readwrite, nonatomic, strong) NSArray *linkModels;
 @property (readwrite, nonatomic, strong) TTTAttributedLabelLink *activeLink;
 @property (readwrite, nonatomic, strong) NSArray *accessibilityElements;
+@property (nonatomic) CGFloat endOfLineTruncationLinkExtension;
 
 - (void) longPressGestureDidFire:(UILongPressGestureRecognizer *)sender;
 @end
@@ -690,9 +691,9 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
         // Check if the point is within this line vertically
         if (p.y >= yMin) {
             // Check if the point is within this line horizontally
-            if (p.x >= lineOrigin.x && p.x <= lineOrigin.x + width) {
+            if (p.x >= lineOrigin.x && p.x <= lineOrigin.x + width + self.endOfLineTruncationLinkExtension) {
                 // Convert CT coordinates to line-relative coordinates
-                CGPoint relativePoint = CGPointMake(p.x - lineOrigin.x, p.y - lineOrigin.y);
+                CGPoint relativePoint = CGPointMake(p.x - lineOrigin.x - self.endOfLineTruncationLinkExtension, p.y - lineOrigin.y);
                 idx = CTLineGetStringIndexForPosition(line, relativePoint);
                 break;
             }
@@ -806,6 +807,8 @@ static inline CGSize CTFramesetterSuggestFrameSizeForAttributedStringWithConstra
                     if ([[NSCharacterSet newlineCharacterSet] characterIsMember:lastCharacter]) {
                         [truncationString deleteCharactersInRange:NSMakeRange((NSUInteger)(lastLineRange.length - 1), 1)];
                     }
+                    CGFloat ascent, descent, leading;
+                    self.endOfLineTruncationLinkExtension = CTLineGetTypographicBounds(truncationToken, &ascent, &descent, &leading);
                 }
                 [truncationString appendAttributedString:attributedTruncationString];
                 CTLineRef truncationLine = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)truncationString);
